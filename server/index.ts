@@ -10,11 +10,11 @@ const app: Express = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000", // Allow requests from this origin
+    origin: ["http://localhost:3001", "https://ringel.kh.ua"], // Allow requests from this origin
     methods: ["GET", "POST"], // Allow these HTTP methods
   },
 });
-const port = 3001;
+const port = 3002;
 
 const rooms: Room[] = [];
 
@@ -62,12 +62,7 @@ io.on("connection", async (socket: Socket) => {
 
     rooms.push(room);
 
-    socket.emit(SocketEvent.ROOM_INFO, {
-      id: room.id,
-      code: room.code,
-      theme: room.theme,
-      location: room.location,
-    });
+    socket.emit(SocketEvent.ROOM_INFO, room);
 
     console.info(`User ${name} created the room with code ${code}`);
   });
@@ -92,12 +87,7 @@ io.on("connection", async (socket: Socket) => {
 
         room.members.push({ name, role: "user", isAdmin: false });
 
-        socket.emit(SocketEvent.ROOM_INFO, {
-          id: room.id,
-          code: room.code,
-          theme: room.theme,
-          location: room.location,
-        });
+        socket.emit(SocketEvent.ROOM_INFO, room);
 
         console.info(`User ${name} joined the room with code ${code}`);
       } else {

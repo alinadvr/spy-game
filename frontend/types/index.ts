@@ -10,6 +10,7 @@ export type Room = {
   code: string;
   theme: string;
   location: string;
+  members: RoomMember[];
 };
 
 export type RoomMember = {
