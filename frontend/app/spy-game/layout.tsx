@@ -6,7 +6,7 @@ import { ToastContainer } from "react-toastify";
 
 import classNames from "@/utils/classNames";
 
-import "./globals.css";
+import "@/app/globals.css";
 import "react-toastify/dist/ReactToastify.css";
 
 import logo from "@/public/logo.svg";

@@ -18,7 +18,7 @@ const port = 3002;
 
 const rooms: Room[] = [];
 
-app.get("/", (req: Request, res: Response) => {
+app.get("/spy-game-server", (req: Request, res: Response) => {
   res.send("Express + TypeScript Server");
 });
 
