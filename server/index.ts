@@ -10,7 +10,7 @@ const app: Express = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3001", "https://ringel.kh.ua"], // Allow requests from this origin
+    origin: ["http://localhost:3001", "http://vagauto.in.ua"], // Allow requests from this origin
     methods: ["GET", "POST"], // Allow these HTTP methods
   },
 });
