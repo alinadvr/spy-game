@@ -1,3 +1,26 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.animation-loading-text {
+  --bg-size: 400%;
+  --color-one: #dcd5ff;
+  --color-two: #6c24dd;
+  background: linear-gradient(
+      90deg,
+      var(--color-one),
+      var(--color-two),
+      var(--color-one)
+    )
+    0 0 / var(--bg-size) 100%;
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: loading-text 8s infinite linear;
+}
+
+@keyframes loading-text {
+  to {
+    background-position: -400% 0;
+  }
+}

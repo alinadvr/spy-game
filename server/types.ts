@@ -1,7 +1,8 @@
 export enum SocketEvent {
   CREATE_ROOM = "createRoom",
   JOIN_ROOM = "joinRoom",
-  ROOM_INFO = "roomInfo",
+  USER_JOINED = "userJoined",
+  UPDATE_ROOM = "updateRoom",
   LEAVE_ROOM = "leaveRoom",
 }
 
@@ -14,6 +15,7 @@ export type Room = {
 };
 
 export type RoomMember = {
+  id: string;
   name: string;
   role: "user" | "spy";
   isAdmin: boolean;

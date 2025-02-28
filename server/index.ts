@@ -4,7 +4,7 @@ import express, { Express, Request, Response } from "express";
 import { uid } from "uid";
 import { Server, Socket } from "socket.io";
 
-import { Room, SocketEvent } from "./types";
+import { Room, RoomMember, SocketEvent } from "./types";
 
 const app: Express = express();
 const server = createServer(app);
@@ -18,15 +18,28 @@ const port = 3002;
 
 const rooms: Room[] = [];
 
-app.get("/spy-game-server", (req: Request, res: Response) => {
+app.get("/", (req: Request, res: Response) => {
   res.send("Express + TypeScript Server");
 });
 
 io.on("connection", async (socket: Socket) => {
   console.log("a user connected");
 
+  // Check if user was joined to room
+  const userId = socket.handshake.query.userId;
+  const room = userId
+    ? rooms.find(({ members }) => members.find(({ id }) => userId === id))
+    : undefined;
+
+  if (room) {
+    io.to(socket.rooms.values().next().value!).emit(SocketEvent.USER_JOINED, {
+      room,
+      activeUser: room.members.find(({ id }) => id === userId),
+    });
+  }
+
   socket.on(SocketEvent.CREATE_ROOM, ({ name }: { name: string }) => {
-    let code = uid(8);
+    let code = uid(6);
     let roomId = uid(20);
 
     // Check if user connected to room
@@ -46,23 +59,30 @@ io.on("connection", async (socket: Socket) => {
       const existCode = rooms.find((room) => room.code === code);
 
       if (!existCode && !existRoom) break;
-      if (existCode) code = uid(8);
+      if (existCode) code = uid(6);
       if (existRoom) roomId = uid(20);
     }
 
     socket.join(roomId);
 
+    const member: RoomMember = {
+      id: uid(8),
+      name,
+      role: "user",
+      isAdmin: true,
+    };
     const room: Room = {
       id: roomId,
       code,
       theme: "Culture",
       location: "Theatre",
-      members: [{ name, role: "user", isAdmin: true }],
+      members: [member],
     };
+    const userRoom = socket.rooms.values().next().value!;
 
     rooms.push(room);
 
-    socket.emit(SocketEvent.ROOM_INFO, room);
+    io.to(userRoom).emit(SocketEvent.USER_JOINED, { room, activeUser: member });
 
     console.info(`User ${name} created the room with code ${code}`);
   });
@@ -70,9 +90,11 @@ io.on("connection", async (socket: Socket) => {
   socket.on(
     SocketEvent.JOIN_ROOM,
     ({ name, code }: { name: string; code: string }) => {
+      const userRoom = socket.rooms.values().next().value!;
+
       // Check if user connected to room
       if (socket.rooms.size >= 2) {
-        io.to(socket.rooms.values().next().value!).emit("message", {
+        io.to(userRoom).emit("message", {
           type: "error",
           content: "Already connected to game",
         });
@@ -82,17 +104,47 @@ io.on("connection", async (socket: Socket) => {
 
       const room = rooms.find((room) => room.code === code);
 
-      if (room) {
-        socket.join(room.id);
-
-        room.members.push({ name, role: "user", isAdmin: false });
-
-        socket.emit(SocketEvent.ROOM_INFO, room);
-
-        console.info(`User ${name} joined the room with code ${code}`);
-      } else {
+      if (!room) {
         console.error(`Room with code ${code} does not exist`);
+
+        io.to(userRoom).emit("message", {
+          type: "error",
+          content: "Game with this code does not exist",
+        });
+
+        return;
       }
+
+      if (room.members.length >= 12) {
+        console.error(`Room with code ${code} is full`);
+
+        io.to(userRoom).emit("message", {
+          type: "error",
+          content: "Game with this code is full",
+        });
+
+        return;
+      }
+
+      socket.join(room.id);
+
+      const member: RoomMember = {
+        id: uid(8),
+        name,
+        role: "user",
+        isAdmin: !room.members.find(({ isAdmin }) => isAdmin),
+      };
+
+      room.members.push(member);
+
+      io.to(userRoom).emit(SocketEvent.USER_JOINED, {
+        room,
+        activeUser: member,
+      });
+
+      socket.to(room.id).emit(SocketEvent.UPDATE_ROOM, room);
+
+      console.info(`User ${name} joined the room with code ${code}`);
     }
   );
 
@@ -104,9 +156,23 @@ io.on("connection", async (socket: Socket) => {
     }
   );
 
-  socket.on(SocketEvent.LEAVE_ROOM, ({ roomId }: { roomId: string }) => {
-    socket.leave(roomId);
-  });
+  socket.on(
+    SocketEvent.LEAVE_ROOM,
+    ({ memberId, roomId }: { memberId: string; roomId: string }) => {
+      const room = rooms.find(({ id }) => id === roomId);
+      const member = room?.members.find(({ id }) => id === memberId);
+
+      if (room && member) {
+        room.members.splice(room.members.indexOf(member), 1);
+
+        if (member.isAdmin && room.members[0]) room.members[0].isAdmin = true;
+      }
+
+      socket.to(roomId).emit(SocketEvent.UPDATE_ROOM, room);
+
+      socket.leave(roomId);
+    }
+  );
 
   socket.on("disconnecting", () => {
     console.log("disconnecting", socket.rooms);

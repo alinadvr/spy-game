@@ -14,6 +14,7 @@
     "next": "15.0.3",
     "react": "19.0.0-rc-66855b96-20241106",
     "react-dom": "19.0.0-rc-66855b96-20241106",
+    "react-otp-input": "^3.1.1",
     "react-toastify": "^10.0.6",
     "socket.io-client": "^4.8.1",
     "tw-merge": "0.0.1-alpha.3"

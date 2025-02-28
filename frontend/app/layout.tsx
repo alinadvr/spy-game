@@ -6,6 +6,8 @@ import { ToastContainer } from "react-toastify";
 
 import classNames from "@/utils/classNames";
 
+import { GameConnectionProvider } from "@/context/gameConnectionContext";
+
 import "@/app/globals.css";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -34,7 +36,7 @@ export default function RootLayout({
         <Image
           src={backfround}
           alt="Background"
-          className="absolute -z-10 w-full object-cover"
+          className="fixed -z-10 size-full object-cover"
           priority
           quality={100}
         />
@@ -50,8 +52,10 @@ export default function RootLayout({
             FindSpy
           </h1>
         </header>
-        <main>{children}</main>
-        <ToastContainer position="top-right" />
+        <GameConnectionProvider>
+          <main>{children}</main>
+        </GameConnectionProvider>
+        <ToastContainer position="top-right" toastClassName="!bg-violet-950" />
       </body>
     </html>
   );
