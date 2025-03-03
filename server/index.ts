@@ -6,6 +6,8 @@ import { Server, Socket } from "socket.io";
 
 import { Room, RoomMember, SocketEvent } from "./types";
 
+import random from "./utils/random";
+
 const app: Express = express();
 const server = createServer(app);
 const io = new Server(server, {
@@ -19,6 +21,7 @@ const port = 3002;
 const rooms: Room[] = [];
 
 app.get("/", (req: Request, res: Response) => {
+  console.log("rooms", rooms);
   res.send("Express + TypeScript Server");
 });
 
@@ -169,10 +172,53 @@ io.on("connection", async (socket: Socket) => {
       }
 
       socket.to(roomId).emit(SocketEvent.UPDATE_ROOM, room);
-
       socket.leave(roomId);
+
+      if (room?.members.length === 0) {
+        rooms.splice(rooms.indexOf(room), 1);
+      }
     }
   );
+
+  socket.on(SocketEvent.PICK_SPY, ({ roomId }: { roomId: string }) => {
+    const room = rooms.find(({ id }) => id === roomId);
+
+    if (!room) {
+      console.error(`Room with roomId ${roomId} not found`);
+
+      io.to(roomId).emit("message", {
+        type: "error",
+        content: "Game could not be started. Game is not found.",
+      });
+
+      return;
+    }
+
+    let spiesCount =
+      room.members.length <= 6 ? 1 : room.members.length <= 10 ? 2 : 3;
+    // array of member indexes
+    let activeSpies: number[] = [];
+
+    while (activeSpies.length < spiesCount) {
+      // pick random member by index
+      let i: number = -1;
+
+      while (activeSpies.includes(i) || i === -1) {
+        i = Math.round(random(0, room.members.length - 1));
+      }
+
+      console.log(room.members, i, room.members[i]);
+
+      activeSpies.push(i);
+      room.members[i].role = "spy";
+    }
+
+    io.to(roomId).emit(SocketEvent.PICK_SPY, {
+      spyIds: room.members
+        .filter(({ role }) => role === "spy")
+        .flatMap(({ id }) => id),
+    });
+  });
 
   socket.on("disconnecting", () => {
     console.log("disconnecting", socket.rooms);

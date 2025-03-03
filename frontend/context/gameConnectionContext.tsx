@@ -7,7 +7,7 @@ import { io, Socket } from "socket.io-client";
 
 import { Room, RoomMember, SocketEvent } from "@/types";
 
-export const SCREENS = ["start", "name", "wait"] as const;
+export const SCREENS = ["start", "name", "wait", "loading", "role"] as const;
 
 type Screen = (typeof SCREENS)[number];
 
@@ -86,6 +86,24 @@ export const GameConnectionProvider = ({
 
     socket.on(SocketEvent.UPDATE_ROOM, (room: Room) => {
       setRoom(room);
+    });
+
+    socket.on(SocketEvent.PICK_SPY, ({ spyIds }: { spyIds: string[] }) => {
+      console.log("spy ids", spyIds);
+
+      setActiveUser((activeUser) => {
+        console.log(
+          activeUser && spyIds.includes(activeUser.id)
+            ? { ...activeUser, role: "spy" }
+            : activeUser,
+        );
+
+        return activeUser && spyIds.includes(activeUser.id)
+          ? { ...activeUser, role: "spy" }
+          : activeUser;
+      });
+
+      setScreen("role");
     });
 
     socket.on("connect_error", (err) => {

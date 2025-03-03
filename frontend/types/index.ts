@@ -2,6 +2,7 @@ export enum SocketEvent {
   CREATE_ROOM = "createRoom",
   JOIN_ROOM = "joinRoom",
   USER_JOINED = "userJoined",
+  PICK_SPY = "pickSpy",
   UPDATE_ROOM = "updateRoom",
   LEAVE_ROOM = "leaveRoom",
 }
